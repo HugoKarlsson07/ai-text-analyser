@@ -1,4 +1,6 @@
 flask
 torch
 transformers
+gunicorn
+
 
