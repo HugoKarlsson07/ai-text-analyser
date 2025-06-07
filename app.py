@@ -3,9 +3,10 @@ from flask_cors import CORS
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import re
+import os
 
 app = Flask(__name__)
-CORS(app)  # Tillåt CORS, ta bort om ej behövs
+CORS(app)  # Ta bort om CORS ej behövs
 
 MODEL_NAME = "microsoft/xtremedistil-l6-h256-uncased"
 MAX_LEN = 128
@@ -27,34 +28,32 @@ def get_ai_prob(text):
 
 @app.route("/")
 def index():
-    # Serverar index.html från mappen templates
     return render_template("index.html")
 
 @app.route("/detect", methods=["POST"])
 def detect():
-    data = request.get_json()
+    data = request.get_json(force=True)
     text = data.get("text", "").strip()
     if not text:
         return jsonify({"error": "Ingen text angiven."}), 400
 
     sentences = SENTENCE_SPLITTER.split(text)
-    scores = [get_ai_prob(s) for s in sentences]
-    highlighted = []
+    scores = [get_ai_prob(sentence) for sentence in sentences]
 
-    for s, score in zip(sentences, scores):
+    highlighted = []
+    for sentence, score in zip(sentences, scores):
         if score >= THRESHOLD:
-            # Markera meningar som sannolikt AI-genererade
-            highlighted.append(f"<span class='highlight' title='AI: {score:.2f}'>{s}</span>")
+            highlighted.append(f"<span class='highlight' title='AI: {score:.2f}'>{sentence}</span>")
         else:
-            highlighted.append(s)
+            highlighted.append(sentence)
 
     avg_score = sum(scores) / len(scores) if scores else 0.0
 
     return jsonify({
         "highlighted_text": " ".join(highlighted),
-        "ai_score": avg_score
+        "ai_score": round(avg_score, 4)
     })
 
 if __name__ == "__main__":
-    # Kör på port 10000, debug=True för utveckling
-    app.run(port=10000, debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port, debug=True)
