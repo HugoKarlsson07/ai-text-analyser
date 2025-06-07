@@ -5,17 +5,13 @@ import os
 app = Flask(__name__)
 
 MODEL_PATH = "model.joblib"
-VECTORIZER_PATH = "vectorizer.joblib"
 
-# Kontrollera att filerna finns, annars kasta fel
+# Kontrollera att filen finns, annars kasta fel
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Modellfil saknas: {MODEL_PATH}")
-if not os.path.exists(VECTORIZER_PATH):
-    raise FileNotFoundError(f"Vectorizer-fil saknas: {VECTORIZER_PATH}")
 
-# Ladda modellen och vectorizern
-model = joblib.load(MODEL_PATH)
-vectorizer = joblib.load(VECTORIZER_PATH)
+# Ladda modellen och vectorizern från samma fil (en tuple)
+model, vectorizer = joblib.load(MODEL_PATH)
 
 @app.route("/")
 def index():
