@@ -4,6 +4,7 @@ import torch
 import re
 import logging
 import sys
+import os
 
 app = Flask(__name__)
 
@@ -127,7 +128,6 @@ def detect():
         app.logger.error(f"Fel i /detect: {e}", exc_info=True)
         return jsonify({"error": "Internt serverfel."}), 500
 
-# --- Render kör Gunicorn, så vi undviker att starta appen här ---
-# För lokal utveckling kan du avkommentera detta block:
-# if __name__ == "__main__":
-#     app.run(debug=app.config["DEBUG"])
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=app.config["DEBUG"])
