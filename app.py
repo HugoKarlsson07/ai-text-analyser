@@ -2,6 +2,10 @@ from flask import Flask, request, jsonify, render_template
 import onnxruntime as ort
 import numpy as np
 import os
+import locale
+
+locale.setlocale(locale.LC_ALL, 'C')
+
 
 app = Flask(__name__)
 
