@@ -1,6 +1,4 @@
-Flask
-scikit-learn
-numpy
-scipy
-Werkzeug
+Flask>=2.0
+onnxruntime>=1.14
+numpy>=1.21
 gunicorn
