@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Language" content="sv" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Text Detector</title>
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2980b9;
+      --background-color: #f4f7fc;
+      --text-color: #333;
+      --header-bg: #2c3e50;
+      --border-color: #ddd;
+      --shadow-light: rgba(0, 0, 0, 0.05);
+      --shadow-medium: rgba(0, 0, 0, 0.1);
+      --radius-small: 3px;
+      --radius-medium: 8px;
+      --radius-large: 10px;
+      --highlight-color: #ffcccc;
+      --ai-low-color: #27ae60;
+      --ai-medium-color: #f39c12;
+      --ai-high-color: #e74c3c;
+    }
+
+    /* Reset och grundstil */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--background-color);
+      margin: 0;
+      padding: 1rem;
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: var(--header-bg);
+      color: #fff;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 5px var(--shadow-medium);
+    }
+
+    main {
+      flex-grow: 1;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem 2rem;
+      background-color: #fff;
+      border-radius: var(--radius-large);
+      box-shadow: 0 0 10px var(--shadow-light);
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 1.1rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-medium);
+      padding: 1rem;
+      font-size: 1rem;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    textarea:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: #fff;
+      font-weight: 600;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-medium);
+      cursor: pointer;
+      font-size: 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: var(--secondary-color);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    button:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    /* Extra stil för sekundär knapp */
+    .secondary-button {
+      background-color: #777;
+    }
+
+    .secondary-button:hover:not(:disabled) {
+      background-color: #555;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .output {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-medium);
+      background-color: #fafafa;
+      white-space: pre-wrap;
+      min-height: 150px;
+      font-size: 1.1rem;
+      line-height: 1.4;
+      color: #222;
+    }
+
+    .output.empty-state {
+      color: #777;
+      font-style: italic;
+    }
+
+    .highlight {
+      background-color: var(--highlight-color);
+      cursor: help;
+      border-radius: var(--radius-small);
+      padding: 0 4px;
+      position: relative;
+    }
+
+    .highlight:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-small);
+      font-size: 0.85rem;
+      white-space: nowrap;
+      z-index: 10;
+      margin-bottom: 8px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .highlight:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .progress-section {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+    }
+
+    .progress-section h3 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+      color: #555;
+    }
+
+    .progress-container {
+      margin-top: 0.5rem;
+      background-color: #eee;
+      border-radius: var(--radius-large);
+      overflow: hidden;
+      height: 24px;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      width: 0%;
+      color: #fff;
+      text-align: center;
+      line-height: 24px;
+      font-weight: 700;
+      transition: width 0.5s ease, background-color 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .progress-bar.low-ai {
+      background: linear-gradient(90deg, #2ecc71, var(--ai-low-color));
+    }
+
+    .progress-bar.medium-ai {
+      background: linear-gradient(90deg, #f1c40f, var(--ai-medium-color));
+    }
+
+    .progress-bar.high-ai {
+      background: linear-gradient(90deg, #e74c3c, var(--ai-high-color));
+    }
+
+    .progress-bar.loading {
+      background: repeating-linear-gradient(
+        45deg,
+        var(--primary-color),
+        var(--primary-color) 10px,
+        var(--secondary-color) 10px,
+        var(--secondary-color) 20px
+      );
+      background-size: 200% 100%;
+      animation: progress-pulse 1.5s linear infinite;
+    }
+
+    @keyframes progress-pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: 0% 0; }
+    }
+
+    .description {
+      font-size: 0.95rem;
+      color: #555;
+      margin-bottom: 1.5rem;
+      line-height: 1.4;
+    }
+
+    .explanation {
+      font-size: 0.85rem;
+      color: #777;
+      margin-top: 0.5rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem 0;
+      font-size: 0.9rem;
+      color: #777;
+      border-top: 1px solid #eee;
+      margin-top: 2rem;
+    }
+
+    /* Spinner */
+    .spinner {
+      margin-left: 8px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #fff;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsivt */
+    @media (max-width: 480px) {
+      main {
+        margin: 1rem;
+        padding: 1rem;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    AI Text Detector
+  </header>
+
+  <main>
+    <p class="description">
+      Klistra in din text nedan så analyserar AI Text Detector hur stor andel av texten som troligen är genererad av AI. Resultatet visas både i texten med markeringar och i en mätare.
+    </p>
+
+    <form id="textForm" onsubmit="event.preventDefault(); checkText();" aria-describedby="result-info">
+      <label for="inputText">Klistra in text för analys:</label>
+      <textarea id="inputText" placeholder="Skriv eller klistra in text här..." aria-describedby="result-info"></textarea>
+
+      <div class="button-group">
+        <button type="submit" id="analyzeBtn">Analysera text</button>
+        <button type="button" id="clearBtn" class="secondary-button" onclick="clearText()">Rensa text</button>
+      </div>
+    </form>
+
+    <div id="result" class="output empty-state" aria-live="polite" aria-atomic="true" role="region">
+      Resultatet visas här efter analys. Markeringar indikerar troligen AI-genererade delar.
+    </div>
+
+    <section class="progress-section" aria-label="Resultat av AI-analys">
+      <h3>AI-andel i texten:</h3>
+      <div class="progress-container" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="AI andel i texten">
+        <div id="progressBar" class="progress-bar" style="width: 0%;">0%</div>
+      </div>
+      <p class="explanation">
+        En högre procent innebär att en större del av texten bedöms vara genererad av AI. Detta är en statistisk bedömning och inte 100% garanterad.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 AI Text Detector – Alla rättigheter reserverade
+  </footer>
+
+  <script>
+    async function checkText() {
+      const textArea = document.getElementById("inputText");
+      const resultDiv = document.getElementById("result");
+      const progressBar = document.getElementById("progressBar");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const text = textArea.value.trim();
+
+      if (!text) {
+        alert("Vänligen skriv in någon text först.");
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      clearBtn.disabled = true;
+      analyzeBtn.innerHTML = 'Analyserar... <span class="spinner" aria-hidden="true"></span>';
+
+      resultDiv.innerHTML = '<p class="empty-state">Analyserar...</p>';
+      resultDiv.classList.add('empty-state');
+
+      progressBar.style.width = '0%';
+      progressBar.textContent = '';
+      progressBar.classList.add('loading');
+      progressBar.classList.remove('low-ai', 'medium-ai', 'high-ai');
+
+      try {
+        const response = await fetch("/detect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+
+        if (!response.ok) {
+          let errorMessage = "Ett nätverksfel uppstod. Vänligen försök igen.";
+          try {
+            const errorData = await response.json();
+            if (errorData && errorData.message) errorMessage = errorData.message;
+          } catch {}
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+
+        if (data.highlighted_text) {
+          resultDiv.innerHTML = data.highlighted_text;
+          resultDiv.classList.remove('empty-state');
+        } else {
+          resultDiv.innerHTML = "<p>Ingen text att visa eller inget resultat från analysen.</p>";
+          resultDiv.classList.add('empty-state');
+        }
+
+        if (typeof data.ai_score === "number") {
+          const percent = Math.round(data.ai_score * 100);
+          progressBar.style.width = percent + '%';
+          progressBar.textContent = `${percent}% AI`;
+          progressBar.setAttribute('aria-valuenow', percent);
+
+          progressBar.classList.remove('low-ai', 'medium-ai', 'high-ai');
+          if (percent <= 30) progressBar.classList.add('low-ai');
+          else if (percent <= 70) progressBar.classList.add('medium-ai');
+          else progressBar.classList.add('high-ai');
+        } else {
+          progressBar.style.width = '0%';
+          progressBar.textContent = 'Inget resultat';
+          progressBar.setAttribute('aria-valuenow', 0);
+          progressBar.classList.remove('low-ai', 'medium-ai', 'high-ai');
+        }
+      } catch (error) {
+        console.error("Analysis error:", error);
+        resultDiv.innerHTML = `<p class="empty-state">Fel: ${error.message}</p>`;
+        progressBar.style.width = '0%';
+        progressBar.textContent = 'Fel vid analys';
+        progressBar.setAttribute('aria-valuenow', 0);
+        progressBar.classList.remove('low-ai', 'medium-ai', 'high-ai');
+      } finally {
+        analyzeBtn.disabled = false;
+        clearBtn.disabled = false;
+        analyzeBtn.textContent = "Analysera text";
+        progressBar.classList.remove('loading');
+      }
+    }
+
+    function clearText() {
+      const textArea = document.getElementById("inputText");
+      const resultDiv = document.getElementById("result");
+      const progressBar = document.getElementById("progressBar");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+
+      textArea.value = "";
+      resultDiv.textContent = 'Resultatet visas här efter analys. Markeringar indikerar troligen AI-genererade delar.';
+      resultDiv.classList.add('empty-state');
+      progressBar.style.width = '0%';
+      progressBar.textContent = '0%';
+      progressBar.classList.remove('low-ai', 'medium-ai', 'high-ai', 'loading');
+      progressBar.setAttribute('aria-valuenow', 0);
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = "Analysera text";
+    }
+
+    document.addEventListener('DOMContentLoaded', clearText);
+  </script>
+</body>
+</html>
