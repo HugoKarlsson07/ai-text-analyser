@@ -2,7 +2,7 @@
 
 FROM python:3.11-slim
 
-# Installera locale-paket
+# Install locale packages for proper character encoding
 RUN apt-get update && \
     apt-get install -y locales && \
     locale-gen en_US.UTF-8 && \
@@ -12,18 +12,22 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-# Skapa arbetsmapp
+# Create a working directory inside the container
 WORKDIR /app
 
-# Kopiera requirements.txt och installera beroenden
+# Copy requirements.txt and install Python dependencies
+# This is done early to leverage Docker layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopiera all kod
+# Copy all your application code and static/templates files
+# This includes app.py, model.onnx, and the 'templates' folder
 COPY . .
 
-# Exponera port (matcha din Flask-app)
+# Expose the port your Flask app will run on (10000)
 EXPOSE 10000
 
-# Starta appen med Gunicorn
+# Start the application using Gunicorn
+# 'app:app' means look for the Flask app instance named 'app'
+# within the 'app.py' file.
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000", "--workers", "1"]
