@@ -1,6 +1,4 @@
-flask
-torch
-transformers
-gunicorn
-
-
+Flask==3.0.3
+torch==2.3.0
+transformers==4.41.2
+gunicorn==22.0.0
